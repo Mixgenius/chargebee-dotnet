@@ -4,10 +4,10 @@ build:
   verbosity: minimal
 
 before_build:
-  – dotnet restore -v Minimal
+  – ps: dotnet restore -v Minimal
 
 build_script:
-  - dotnet build
+  - ps: dotnet build
 
   # build cache to preserve files/folders between builds
 cache:
