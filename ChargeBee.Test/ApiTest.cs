@@ -4,41 +4,37 @@ using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Text;
-
-using NUnit.Framework;
-
 using ChargeBee.Api;
 using ChargeBee.Models;
 using ChargeBee.Models.Enums;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace ChargeBee.Test
 {
-    [TestFixture]
     public class ApiTest
     {
-        [SetUp]
-        public void Configure()
+        public ApiTest()
         {
-			ApiConfig.Proto = "http";
-			ApiConfig.DomainSuffix = "localcb.com:8080";
-			ApiConfig.Configure("mannar-test", "__dev__FhJgi9KugVCv9yO8zosAFC11lYCEAufI");
+            ApiConfig.Proto = "http";
+            ApiConfig.DomainSuffix = "localcb.com:8080";
+            ApiConfig.Configure("mannar-test", "__dev__FhJgi9KugVCv9yO8zosAFC11lYCEAufI");
         }
 
-        /*[Test]
+        /*[Fact]
         public async Task TestConfig()
         {
-            Assert.AreEqual("https://guidebot-test.chargebee.com/api/v2", ApiConfig.Instance.ApiBaseUrl);
+            Assert.Equal("https://guidebot-test.chargebee.com/api/v2", ApiConfig.Instance.ApiBaseUrl);
         }*/
 
-        [Test]
+        [Fact]
         public async Task TestStatusCode()
         {
             ListResult result = await Event.List().Request();
-            Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
         }
 
-        [Test]
+        [Fact]
         public async Task TestListEvents()
         {
             ListResult result = await Event.List().Request();
@@ -57,23 +53,23 @@ namespace ChargeBee.Test
             }
         }
 
-        [Test]
+        [Fact]
         public async Task TestListEventsOffset()
         {
             ListResult result1 = await Event.List().Limit(1).Request();
-            Assert.AreEqual(1, result1.List.Count);
+            Assert.NotEmpty(result1.List);
 
             ListResult result2 = await Event.List().Limit(1).Offset(result1.NextOffset).Request();
-            Assert.AreEqual(1, result2.List.Count);
+            Assert.NotEmpty(result2.List);
 
-            Assert.AreNotEqual(result1.List[0].Event.Id, result2.List[0].Event.Id);
+            Assert.NotEqual(result1.List[0].Event.Id, result2.List[0].Event.Id);
         }
 
-        [Test]
+        [Fact]
         public async Task TestRetrieveEvent()
         {
             ListResult list = await Event.List().Limit(1).Request();
-            Assert.AreEqual(1, list.List.Count);
+            Assert.NotEmpty(list.List);
 
             Event eventFromList = list.List[0].Event;
 
@@ -82,12 +78,12 @@ namespace ChargeBee.Test
 
             EntityResult result = await Event.Retrieve(eventFromList.Id).Request();
             Event retrievedEvent = result.Event;
-            Assert.AreEqual(eventFromList.Id, retrievedEvent.Id);
-            Assert.AreEqual(eventFromList.OccurredAt, retrievedEvent.OccurredAt);
-            Assert.AreEqual(eventFromList.Content.ToString(), retrievedEvent.Content.ToString());
+            Assert.Equal(eventFromList.Id, retrievedEvent.Id);
+            Assert.Equal(eventFromList.OccurredAt, retrievedEvent.OccurredAt);
+            Assert.Equal(eventFromList.Content.ToString(), retrievedEvent.Content.ToString());
         }
 
-        //[Test]
+        //[Fact]
         //[ExpectedException(
         //    ExpectedException = typeof(ApiException),
         //    ExpectedMessage = "Sorry, we couldn't find that resource")]
@@ -96,7 +92,7 @@ namespace ChargeBee.Test
         //    Event.Retrieve("not_existent_id").Request();
         //}
 
-        [Test]
+        [Fact]
         public async Task TestCreateSubscription()
         {
             string planId = "enterprise_half_yearly";
@@ -110,10 +106,10 @@ namespace ChargeBee.Test
 
             Subscription subs = result.Subscription;
             Assert.NotNull(subs);
-            Assert.AreEqual(planId, subs.PlanId);
+            Assert.Equal(planId, subs.PlanId);
         }
 
-        [Test]
+        [Fact]
         public async Task TestListSubscriptions()
         {
             ListResult result = await Subscription.List().Request();
@@ -127,7 +123,7 @@ namespace ChargeBee.Test
             }
         }
 
-        [Test]
+        [Fact]
         public async Task TestRetrieveSubscriptions()
         {
             EntityResult result = await Subscription.Create().PlanId("enterprise_half_yearly").Request();
@@ -138,16 +134,16 @@ namespace ChargeBee.Test
             Subscription subs2 = result.Subscription;
             Assert.NotNull(subs2);
 
-            Assert.AreEqual(subs1.Status, subs2.Status);
+            Assert.Equal(subs1.Status, subs2.Status);
         }
 
-        [Test]
+        [Fact]
         public async Task TestUpdateSubscription()
         {
             EntityResult result = await Subscription.Create().PlanId("enterprise_half_yearly").Request();
             Subscription subs1 = result.Subscription;
             Assert.NotNull(subs1);
-            Assert.AreNotEqual("basic", subs1.PlanId);
+            Assert.NotEqual("basic", subs1.PlanId);
 
             result = await Subscription.Update(subs1.Id)
                 .PlanId("basic")
@@ -157,13 +153,13 @@ namespace ChargeBee.Test
 
             Subscription subs2 = result.Subscription;
             Assert.NotNull(subs2);
-            Assert.AreEqual("basic", subs2.PlanId);
+            Assert.Equal("basic", subs2.PlanId);
 
             List<Subscription.SubscriptionAddon> addons = subs2.Addons;
             Assert.NotNull(addons);
         }
 
-        [Test]
+        [Fact]
         public async Task TestCancelSubscription()
         {
             EntityResult result = await Subscription.Create().PlanId("enterprise_half_yearly").Request();
@@ -174,11 +170,11 @@ namespace ChargeBee.Test
 
             Subscription subs2 = result.Subscription;
             Assert.NotNull(subs2);
-            Assert.IsTrue(DateTime.Now.AddMinutes(-5) < subs2.CancelledAt &&
+            Assert.True(DateTime.Now.AddMinutes(-5) < subs2.CancelledAt &&
                 DateTime.Now.AddMinutes(5) > subs2.CancelledAt);
         }
 
-    //    [Test]
+    //    [Fact]
     //    [ExpectedException(
     //        ExpectedException = typeof(ApiException),
     //        ExpectedMessage = "Cannot re-activate subscription as there is no active credit card on file")]
@@ -192,7 +188,7 @@ namespace ChargeBee.Test
 				//	.Request();
     //    }
 
-        [Test]
+        [Fact]
         public void TestEventCtor()
         {
             string s = "{\"id\": \"ev_HwqE2wPNy5PuFEcd\",\"occurred_at\": 1361453444,\"webhook_status\": \"not_configured\",\"object\": \"event\",\"content\": {\"subscription\": {\"id\": \"HwqE2wPNy5PuEycb\",\"plan_id\": \"enterprise_half_yearly\",\"plan_quantity\": 1,\"status\": \"in_trial\",\"trial_start\": 1361453444,\"trial_end\": 1364045444,\"created_at\": 1361453444,\"due_invoices_count\": 0,\"object\": \"subscription\"},\"customer\": {\"id\": \"HwqE2wPNy5PuEycb\",\"created_at\": 1361453444,\"object\": \"customer\",\"card_status\": \"no_card\"}},\"event_type\": \"subscription_created\"}";
@@ -200,14 +196,14 @@ namespace ChargeBee.Test
             using (MemoryStream ms = new MemoryStream(Encoding.ASCII.GetBytes(s)))
             {
                 Event evnt = new Event(ms);
-                Assert.AreEqual("ev_HwqE2wPNy5PuFEcd", evnt.Id);
-                Assert.AreEqual(
+                Assert.Equal("ev_HwqE2wPNy5PuFEcd", evnt.Id);
+                Assert.Equal(
                     DateTime.ParseExact("2013-02-21 17:30:44", "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
                     evnt.OccurredAt);
             }
         }
 
-        [Test]
+        [Fact]
         public async Task TestHostedPageCheckoutNew()
         {
             EntityResult result = await HostedPage.CheckoutNew()
@@ -221,7 +217,7 @@ namespace ChargeBee.Test
             Assert.NotNull(hostedPage);
         }
 
-        [Test]
+        [Fact]
         public async Task TestHostedPageCheckoutExisting()
         {
             EntityResult result = await HostedPage.CheckoutExisting()
@@ -233,7 +229,7 @@ namespace ChargeBee.Test
             Assert.NotNull(hostedPage);
         }
 
-        [Test]
+        [Fact]
         public async Task TestRetrieveHostedPage()
         {
             EntityResult result = await HostedPage.CheckoutNew()
@@ -251,7 +247,7 @@ namespace ChargeBee.Test
             HostedPage hostedPage2 = result.HostedPage;
             Assert.NotNull(hostedPage2);
 
-            Assert.AreEqual(hostedPage2.Url, hostedPage2.Url);
+            Assert.Equal(hostedPage2.Url, hostedPage2.Url);
         }
     }
 }
