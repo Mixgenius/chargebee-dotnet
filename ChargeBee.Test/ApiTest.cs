@@ -83,14 +83,11 @@ namespace ChargeBee.Test
             Assert.Equal(eventFromList.Content.ToString(), retrievedEvent.Content.ToString());
         }
 
-        //[Fact]
-        //[ExpectedException(
-        //    ExpectedException = typeof(ApiException),
-        //    ExpectedMessage = "Sorry, we couldn't find that resource")]
-        //public async Task TestRetrieveEventNotFound()
-        //{
-        //    Event.Retrieve("not_existent_id").Request();
-        //}
+        [Fact]
+        public async Task TestRetrieveEventNotFound()
+        {
+            await Assert.ThrowsAsync<ApiException>(() => Event.Retrieve("not_existent_id").Request());
+        }
 
         [Fact]
         public async Task TestCreateSubscription()
@@ -174,19 +171,18 @@ namespace ChargeBee.Test
                 DateTime.Now.AddMinutes(5) > subs2.CancelledAt);
         }
 
-    //    [Fact]
-    //    [ExpectedException(
-    //        ExpectedException = typeof(ApiException),
-    //        ExpectedMessage = "Cannot re-activate subscription as there is no active credit card on file")]
-    //    public async Task TestReactivateSubscriptionError()
-    //    {
-    //        EntityResult result = await Subscription.Create().PlanId("enterprise_half_yearly").Request();
-    //        Subscription subs = result.Subscription;
-    //        result = await Subscription.Cancel(subs.Id).Request();
-    //        result = await Subscription.Reactivate(subs.Id).
-				//TrialEnd((long)(DateTime.Now.AddDays(5)-new DateTime(1970, 1, 1)).TotalSeconds)
-				//	.Request();
-    //    }
+        [Fact]
+        public async Task TestReactivateSubscriptionError()
+        {
+            EntityResult result = await Subscription.Create().PlanId("enterprise_half_yearly").Request();
+            Subscription subs = result.Subscription;
+            result = await Subscription.Cancel(subs.Id).Request();
+
+            await Assert.ThrowsAsync<ApiException>(() =>
+                Subscription.Reactivate(subs.Id).
+                    TrialEnd((long)(DateTime.Now.AddDays(5) - new DateTime(1970, 1, 1)).TotalSeconds)
+                        .Request());
+        }
 
         [Fact]
         public void TestEventCtor()
