@@ -6,9 +6,9 @@ build:
 before_build:
   – dotnet restore -v Minimal
 
-build:
+build_script:
   - dotnet build
-  
+
   # build cache to preserve files/folders between builds
 cache:
   - packages -> **\packages.config  # preserve "packages" directory in the root of build folder but will reset it if packages.config is modified
