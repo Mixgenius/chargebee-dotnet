@@ -32,7 +32,7 @@ after_build:
 - dotnet pack ChargeBee\ChargeBee.csproj -c %CONFIGURATION% --no-build -o artifacts
 
 artifacts:
-- path: artifacts\**\*.*
+- path: 'artifacts\*.nupkg'
 
 
 # build cache to preserve files/folders between builds
