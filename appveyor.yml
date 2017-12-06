@@ -2,7 +2,6 @@ version: 1.0.{build}
 image: Visual Studio 2017
 
 configuration:
-- Debug
 - Release
 
 platform: Any CPU
@@ -10,6 +9,7 @@ platform: Any CPU
 environment:
   # Don't report back to the mothership
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  CLI_VERSION: 1.0.5
 
 init:
 - ps: $Env:LABEL = "CI" + $Env:APPVEYOR_BUILD_NUMBER.PadLeft(5, "0")
