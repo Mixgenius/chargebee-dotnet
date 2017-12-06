@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.IO;
 using System.Net;
-using System.Web;
 using System.Reflection;
 using System.Text;
 using System.Collections.Generic;
@@ -10,6 +9,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 
 using ChargeBee.Exceptions;
+using System.Threading.Tasks;
 
 namespace ChargeBee.Api
 {
@@ -23,7 +23,7 @@ namespace ChargeBee.Api
 
             foreach (var path in paths)
             {
-				sb.Append('/').Append(HttpUtility.UrlPathEncode(path));
+				sb.Append('/').Append(WebUtility.UrlEncode(path));
             }
 
             return sb.ToString();
@@ -33,25 +33,25 @@ namespace ChargeBee.Api
         {
             HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
 			request.Method = Enum.GetName(typeof(HttpMethod), method);
-            request.UserAgent = String.Format("ChargeBee-DotNet-Client v{0} on {1} / {2}",
-                ApiConfig.Version,
-                Environment.Version,
-                Environment.OSVersion);
+            //request.UserAgent = String.Format("ChargeBee-DotNet-Client v{0} on {1} / {2}",
+            //    ApiConfig.Version,
+            //    Environment.Version,
+            //    Environment.OSVersion);
 
 	     request.Accept = "application/json";
 
 			AddHeaders (request, env);
 			AddCustomHeaders (request, headers);
 
-            request.Timeout = env.ConnectTimeout;
-            request.ReadWriteTimeout = env.ReadTimeout;
+            //request.Timeout = env.ConnectTimeout;
+            //request.ReadWriteTimeout = env.ReadTimeout;
 
             return request;
         }
 
 		private static void AddHeaders(HttpWebRequest request, ApiConfig env) {
-			request.Headers.Add(HttpRequestHeader.AcceptCharset, env.Charset);
-			request.Headers.Add(HttpRequestHeader.Authorization, env.AuthValue);
+			request.Headers[HttpRequestHeader.AcceptCharset] = env.Charset;
+			request.Headers[HttpRequestHeader.Authorization] = env.AuthValue;
 		}
 
 		private static void AddCustomHeaders(HttpWebRequest request, Dictionary<string, string> headers) {
@@ -61,18 +61,17 @@ namespace ChargeBee.Api
 		}
 
 		private static void AddHeader(HttpWebRequest request, String headerName, String value) {
-			request.Headers.Add(headerName, value);
+			request.Headers[headerName] = value;
 		}
 
-        private static string SendRequest(HttpWebRequest request, out HttpStatusCode code)
+        private async static Task<Tuple<string, HttpStatusCode>> SendRequest(HttpWebRequest request)
         {
             try
             {
-                using (HttpWebResponse response = request.GetResponse() as HttpWebResponse)
+                using (HttpWebResponse response = (await request.GetResponseAsync()) as HttpWebResponse)
                 using (StreamReader reader = new StreamReader(response.GetResponseStream()))
                 {
-                    code = response.StatusCode;
-                    return reader.ReadToEnd();
+                    return new Tuple<string, HttpStatusCode>(await reader.ReadToEndAsync(), response.StatusCode);
                 }
             }
             catch (WebException ex)
@@ -81,13 +80,12 @@ namespace ChargeBee.Api
                 using (HttpWebResponse response = ex.Response as HttpWebResponse)
                 using (StreamReader reader = new StreamReader(response.GetResponseStream()))
                 {
-                    code = response.StatusCode;
-                    string content = reader.ReadToEnd();
+                    string content = await reader.ReadToEndAsync();
 					Dictionary<string, string> errorJson = null;
 					try {
 						errorJson = JsonConvert.DeserializeObject<Dictionary<string, string>> (content);
 					} catch(JsonException e) {
-						throw new SystemException("Not in JSON format. Probably not a ChargeBee response. \n " + content, e);
+						throw new ArgumentException("Not in JSON format. Probably not a ChargeBee response. \n " + content, e);
 					}
 					string type = "";
 					errorJson.TryGetValue ("type", out type);
@@ -104,49 +102,46 @@ namespace ChargeBee.Api
             }
         }
 
-		private static string GetJson(string url, Params parameters, ApiConfig env, Dictionary<string, string> headers, out HttpStatusCode code,bool IsList)
+		private static Task<Tuple<string, HttpStatusCode>> GetJson(string url, Params parameters, ApiConfig env, Dictionary<string, string> headers,bool IsList)
         {
 			url = String.Format("{0}?{1}", url, parameters.GetQuery(IsList));
 			HttpWebRequest request = GetRequest(url, HttpMethod.GET, headers, env);
-            return SendRequest(request, out code);
+            return SendRequest(request);
         }
 
-		public static EntityResult Post(string url, Params parameters, Dictionary<string, string> headers, ApiConfig env)
+		public static async Task<EntityResult> Post(string url, Params parameters, Dictionary<string, string> headers, ApiConfig env)
         {
 			HttpWebRequest request = GetRequest(url, HttpMethod.POST, headers, env);
             byte[] paramsBytes =
 				Encoding.GetEncoding(env.Charset).GetBytes(parameters.GetQuery(false));
 
-            request.ContentLength = paramsBytes.Length;
+            //request.ContentLength = paramsBytes.Length;
             request.ContentType = 
 				String.Format("application/x-www-form-urlencoded;charset={0}",env.Charset);
-            using (Stream stream = request.GetRequestStream())
+            using (Stream stream = await request.GetRequestStreamAsync())
             {
                 stream.Write(paramsBytes, 0, paramsBytes.Length);
 
-                HttpStatusCode code;
-                string json = SendRequest(request, out code);
+                var response = await SendRequest(request);
 
-                EntityResult result = new EntityResult(code, json);
+                EntityResult result = new EntityResult(response.Item2, response.Item1);
                 return result;
             }
         }
 
-		public static EntityResult Get(string url, Params parameters, Dictionary<string, string> headers, ApiConfig env)
+		public static async Task<EntityResult> Get(string url, Params parameters, Dictionary<string, string> headers, ApiConfig env)
         {
-            HttpStatusCode code;
-			string json = GetJson(url, parameters, env, headers, out code,false);
+            var response = await GetJson(url, parameters, env, headers,false);
 
-            EntityResult result = new EntityResult(code, json);
+            EntityResult result = new EntityResult(response.Item2, response.Item1);
             return result;
         }
 
-		public static ListResult GetList(string url, Params parameters, Dictionary<string, string> headers, ApiConfig env)
+		public static async Task<ListResult> GetList(string url, Params parameters, Dictionary<string, string> headers, ApiConfig env)
         {
-            HttpStatusCode code;
-            string json = GetJson(url, parameters, env, headers, out code,true);
+            var response = await GetJson(url, parameters, env, headers,true);
 
-            ListResult result = new ListResult(code, json);
+            ListResult result = new ListResult(response.Item2, response.Item1);
             return result;
         }
 

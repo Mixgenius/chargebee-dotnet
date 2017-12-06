@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace ChargeBee.Api
 {
@@ -26,12 +27,12 @@ namespace ChargeBee.Api
 			return (T)Convert.ChangeType (this, typeof(T));
 		}
 
-		public EntityResult Request()
+		public Task<EntityResult> Request()
         {
             return Request(ApiConfig.Instance);
         }
 
-        public EntityResult Request(ApiConfig env)
+        public Task<EntityResult> Request(ApiConfig env)
         {
             switch (m_method)
             {

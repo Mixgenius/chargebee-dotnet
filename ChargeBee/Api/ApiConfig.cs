@@ -66,7 +66,7 @@ namespace ChargeBee.Api
             get
             {
                 if (m_instance == null)
-                    throw new ApplicationException("Not yet configured!");
+                    throw new InvalidOperationException("Not yet configured!");
 
                 return m_instance;
             }

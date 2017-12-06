@@ -3,10 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
-using System.Web;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Net;
 
 namespace ChargeBee.Api
 {
@@ -45,19 +45,19 @@ namespace ChargeBee.Api
             {
 				if (pair.Value is IList) {
 					if (IsList) {
-						pairs.Add (String.Format ("{0}={1}", HttpUtility.UrlEncode (pair.Key), HttpUtility.UrlEncode (JsonConvert.SerializeObject(pair.Value))));
+						pairs.Add (String.Format ("{0}={1}", WebUtility.UrlEncode (pair.Key), WebUtility.UrlEncode (JsonConvert.SerializeObject(pair.Value))));
 						continue;
 					}
 					int idx = 0;
 					foreach (object item in (IList)pair.Value) {
 						pairs.Add (String.Format ("{0}[{1}]={2}",
-							HttpUtility.UrlEncode (pair.Key),
+							WebUtility.UrlEncode (pair.Key),
 							idx++,
-							HttpUtility.UrlEncode (item.ToString ()))
+							WebUtility.UrlEncode (item.ToString ()))
 						);
 					}
 				} else {
-					pairs.Add (String.Format ("{0}={1}", HttpUtility.UrlEncode (pair.Key), HttpUtility.UrlEncode (pair.Value.ToString ())));
+					pairs.Add (String.Format ("{0}={1}", WebUtility.UrlEncode (pair.Key), WebUtility.UrlEncode (pair.Value.ToString ())));
 				}
             }
             return pairs.ToArray();
@@ -92,7 +92,7 @@ namespace ChargeBee.Api
 					((DateTime)value).ToString ("yyyy-MM-dd")
 						: ApiUtil.ConvertToTimestamp ((DateTime)value).ToString ();
 			} else {
-				throw new SystemException("Type [" + value.GetType().ToString() + "] not handled");
+				throw new ArgumentException("Type [" + value.GetType().ToString() + "] not handled");
 			}
     	}
 	}

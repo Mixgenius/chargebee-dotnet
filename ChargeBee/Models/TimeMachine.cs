@@ -12,6 +12,7 @@ using ChargeBee.Models.Enums;
 using ChargeBee.Filters.Enums;
 using System.Threading;
 using System.Net;
+using System.Threading.Tasks;
 
 namespace ChargeBee.Models
 {
@@ -67,22 +68,22 @@ namespace ChargeBee.Models
         {
             get { return GetValue<string>("error_json", false); }
         }
-                public TimeMachine WaitForTimeTravelCompletion() {
+                public Task<TimeMachine> WaitForTimeTravelCompletion() {
             return WaitForTimeTravelCompletion(null);
         }
 
-        public TimeMachine WaitForTimeTravelCompletion(ApiConfig config) {
+        public async Task<TimeMachine> WaitForTimeTravelCompletion(ApiConfig config) {
             int count = 0;
             int sleepTime = System.Environment.GetEnvironmentVariable("cb.dotnet.time_travel.sleep.millis") != null
                 ? Convert.ToInt32(System.Environment.GetEnvironmentVariable("cb.dotnet.time_travel.sleep.millis"))
                 : 3000;
             while (this.TimeTravelStatus == TimeTravelStatusEnum.InProgress) {
                 if (count++ > 30) {
-                    throw new SystemException("Time travel is taking too much time");
+                    throw new ArgumentException("Time travel is taking too much time");
                 }
-                Thread.Sleep(sleepTime);
+                await Task.Delay(sleepTime);
                 EntityRequest<Type> req = Retrieve(this.Name);
-                this.JObj = ((config == null) ? req.Request() : req.Request(config)).TimeMachine.JObj;
+                this.JObj = ((config == null) ? await req.Request() : await req.Request(config)).TimeMachine.JObj;
             }
             if (this.TimeTravelStatus == TimeTravelStatusEnum.Failed) {
                 Dictionary<String, String> errorJson = JsonConvert.DeserializeObject < Dictionary < String, String>>(this.ErrorJson
@@ -91,7 +92,7 @@ namespace ChargeBee.Models
                 throw new Exceptions.OperationFailedException(httpStatusCode, errorJson);
             }
             if (this.TimeTravelStatus == TimeTravelStatusEnum.NotEnabled || this.TimeTravelStatus == TimeTravelStatusEnum.UnKnown) {
-                throw new SystemException("Time travel is in wrong state : " + this.TimeTravelStatus);
+                throw new ArgumentException("Time travel is in wrong state : " + this.TimeTravelStatus);
             }
             return this;
         }
