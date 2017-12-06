@@ -24,6 +24,7 @@ dotnet_csproj:
   informational_version: '{version}'
 
 before_build:
+- dotnet --version
 - appveyor-retry dotnet restore -v Minimal
 
 build_script:
