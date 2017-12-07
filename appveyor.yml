@@ -15,8 +15,12 @@ pull_requests:
 
 skip_branch_with_pr: true
 
+install:
+- choco install gitversion.portable -y
+
 init:
 - ps: $Env:LABEL = "CI" + $Env:APPVEYOR_BUILD_NUMBER.PadLeft(5, "0")
+- gitversion
 
 dotnet_csproj:
   patch: true
