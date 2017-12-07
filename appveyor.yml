@@ -16,7 +16,7 @@ pull_requests:
 skip_branch_with_pr: true
 
 install:
-- gitversion
+- gitversion /output buildserver 
 
 init:
 - ps: $Env:LABEL = "CI" + $Env:APPVEYOR_BUILD_NUMBER.PadLeft(5, "0")
