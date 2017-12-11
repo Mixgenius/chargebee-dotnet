@@ -1,18 +1,52 @@
 version: 1.0.{build}
 image: Visual Studio 2017
-build:
-  verbosity: minimal
+
+configuration:
+- Release
+
+environment:
+  # Don't report back to the mothership
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  CLI_VERSION: 1.0.5
+  BUILD_PREFFIX : "dev"
+
+pull_requests:
+  do_not_increment_build_number: true
+
+skip_branch_with_pr: true
+
+install:
+- gitversion /output buildserver 
+
+init:
+- ps: $Env:LABEL = "CI" + $Env:APPVEYOR_BUILD_NUMBER.PadLeft(5, "0")
+- choco install gitversion.portable -y
+
+dotnet_csproj:
+  patch: true
+  file: '**\*.csproj'
+  version: '{version}'
+  package_version: '{version}'
+  assembly_version: '{version}'
+  file_version: '{version}'
+  informational_version: '{version}'
 
 before_build:
-  – ps: dotnet restore -v Minimal
+- dotnet --version
+- appveyor-retry dotnet restore -v Minimal
 
 build_script:
-  - ps: dotnet build
+- dotnet build -c %CONFIGURATION%
 
-  # build cache to preserve files/folders between builds
+after_build:
+- dotnet pack ChargeBee\ChargeBee.csproj -c %CONFIGURATION% --no-build -o ..\artifacts
+
+artifacts:
+- path: 'artifacts\*.nupkg'
+
+# build cache to preserve files/folders between builds
 cache:
-  - packages -> **\packages.config  # preserve "packages" directory in the root of build folder but will reset it if packages.config is modified
-  - projectA\libs
-  - node_modules                    # local npm modules
-  - '%LocalAppData%\NuGet\Cache'    # NuGet < v3
-  - '%LocalAppData%\NuGet\v3-cache' # NuGet v3
+- packages -> **\packages.config  # preserve "packages" directory in the root of build folder but will reset it if packages.config is modified
+- '%LocalAppData%\NuGet\Cache'    # NuGet < v3
+- '%LocalAppData%\NuGet\v3-cache' # NuGet v3
+- '%USERPROFILE%\.nuget\packages'
